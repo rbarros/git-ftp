@@ -77,7 +77,7 @@ test_inits_and_pushes() {
 	git commit -a -m "change" > /dev/null 2>&1
 
 	# this should pass
-	push=$($GIT_FTP_CMD push -u $GIT_FTP_USER -p $GIT_FTP_PASSWD $GIT_FTP_URL)
+	push=$($GIT_FTP_CMD push -u $GIT_FTP_USER -p $GIT_FTP_PASSWD $GIT_FTP_URL -b)
 	rtrn=$?
 	assertEquals 0 $rtrn
 }

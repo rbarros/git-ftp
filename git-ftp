@@ -49,6 +49,7 @@ DEPLOYED_SHA1_FILE=".git-ftp.log"
 DEPLOYED_SHA1=""
 LOCAL_SHA1=""
 SYNCROOT=""
+LOCAL_BACKUP="local"
 CURL_INSECURE=""
 CURL_PUBLIC_KEY=""
 CURL_PRIVATE_KEY=""
@@ -65,6 +66,7 @@ declare -i ACTIVE_MODE=0
 declare -i USE_KEYCHAIN=0
 declare -i ARG_MAX=4096
 declare -a GIT_SUBMODULES
+declare -i BACKUP=0
 
 # ------------------------------------------------------------
 # Constant Exit Error Codes
@@ -152,6 +154,7 @@ OPTIONS
 	-l, --lock		Enable/Disable remote locking.
 	-f, --force		Force, does not ask questions.
 	-n, --silent		Silent mode.
+	-b, --backup        Backup files
 	-v, --verbose		Verbose mode.
 	-vv			Very verbose or debug mode.
 	--remote-root		Specifies remote root directory
@@ -181,7 +184,7 @@ SET DEFAULTS
 	. git config git-ftp.insecure 1
 
 
-SET SCOPE DEFAULTS 
+SET SCOPE DEFAULTS
 	e.g. your scope is 'testing'
 	. git config git-ftp.testing.url ftp.example.local
 
@@ -777,7 +780,7 @@ handle_submodule_sync() {
 handle_remote_protocol_options() {
 	if [ "$REMOTE_PROTOCOL" = "sftp" ]; then
 		set_sftp_config
-		
+
 		if [ ! -z "$CURL_PRIVATE_KEY" ]; then
 			write_log "Using ssh private key file $CURL_PRIVATE_KEY"
 			if [ -z "$CURL_PUBLIC_KEY" ]; then
@@ -787,7 +790,7 @@ handle_remote_protocol_options() {
 			write_log "Using ssh public key file $CURL_PUBLIC_KEY"
 			REMOTE_CMD_OPTIONS="$REMOTE_CMD_OPTIONS --key $CURL_PRIVATE_KEY --pubkey $CURL_PUBLIC_KEY"
 		fi
-		
+
 		# SFTP uses a different remove command and uses absolute paths
 		REMOTE_DELETE_CMD="rm /"
 	fi
@@ -875,7 +878,7 @@ set_remotes() {
 		write_log "No password is set."
 	else
 		write_log "Password is set."
-	fi 
+	fi
 
 	set_remote_protocol
 	set_remote_path
@@ -886,7 +889,7 @@ set_remotes() {
 
 	set_remote_cacert
 	write_log "CACert is '$REMOTE_CACERT'."
-	
+
 	set_curl_insecure
 	write_log "Insecure is '$CURL_INSECURE'."
 }
@@ -1009,6 +1012,7 @@ action_remove_scope() {
 	check_is_git_project
 	remove_scope
 }
+
 # ------------------------------------------------------------
 # Checks
 # ------------------------------------------------------------
@@ -1059,8 +1063,11 @@ check_is_dirty_repository() {
 # Main
 # ------------------------------------------------------------
 main() {
-	cache_git_submodules
-	handle_action
+	echo "main"
+	echo "Backup:$BACKUP"
+	echo "LOCAL_BACKUP:$LOCAL_BACKUP"
+	#cache_git_submodules
+	#handle_action
 	print_error_log
 	exit 0
 }
@@ -1211,6 +1218,18 @@ do
 		-D|--dry-run)
 			DRY_RUN=1
 			write_log "Running dry, won't do anything."
+			;;
+		-b|--backup)
+			echo "$ACTION"
+			if [ "$ACTION" == "push" ]; then
+				BACKUP=1
+				write_log "Running backup files."
+				# catch local backup
+				if [ "$2" == "local" ] || [ "$2" == "remote" ]; then
+					LOCAL_BACKUP="$2"
+					shift
+				fi
+			fi
 			;;
 		-n|--silent)
 			VERBOSE=-1
